@@ -5,5 +5,6 @@
 Ежедневный трекер привычек на год в одном файле Excel: привычки вписываются один раз,
 дальше — галочки каждый день. Статистика, серии 🔥, лучший день, инсайты и итоги года считаются сами.
 
-* Готовые файлы, разбор планеров-конкурентов и описание структуры — в папке [`habit-planner/`](habit-planner/README.md).
-* Генератор: `habit-planner/build_planner.py`.
+* Актуальный продукт «Режим»: [`habit-planner/rezhim/`](habit-planner/rezhim/README.md).
+* Спецификация совета двух отделов: [`habit-planner/council/итог_v2.md`](habit-planner/council/итог_v2.md).
+* Первая версия для Excel и разбор конкурентов: [`habit-planner/`](habit-planner/README.md).
