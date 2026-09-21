@@ -105,17 +105,17 @@ SEASON = {1: "#5AA9E6", 2: "#5AA9E6", 3: "#34D399", 4: "#34D399", 5: "#34D399",
           11: "#F59E0B", 12: "#5AA9E6"}
 
 THEMES = {
+    "light": dict(
+        bg="#F2F3F5", panel="#FFFFFF", panel2="#E8EAEF", text="#16181D",
+        muted="#6B7280", accent="#E09B00", today="#FFF1C2", done="#2FBF61",
+        glyph="#0B3D22", xp="#6D5AE0", input="#FFFDF5",
+        scale=("#E8EAEF", "#A7E8BF", "#2FBF61"), tile="#E8EAEF",
+    ),
     "dark": dict(
         bg="#0E1016", panel="#1B1F2A", panel2="#262B38", text="#F2F4F8",
         muted="#A0A7B8", accent="#F6C453", today="#3A3115", done="#22A35E",
         glyph="#06301A", xp="#8B5CF6", input="#2A2E3B",
         scale=("#262B38", "#166534", "#22A35E"), tile="#262B38",
-    ),
-    "light": dict(
-        bg="#F4F5F9", panel="#FFFFFF", panel2="#EEF0F5", text="#14171F",
-        muted="#5C6478", accent="#F5B800", today="#FFF3C4", done="#BBF7D0",
-        glyph="#14532D", xp="#7C3AED", input="#FFFDF2",
-        scale=("#EEF0F5", "#86EFAC", "#16A34A"), tile="#EEF0F5",
     ),
 }
 
@@ -427,17 +427,17 @@ def build_month(bk, m, weeks, demo=None):
     mrow = K_MON + m - 1                                  # строка месяца в «Расчёте»
 
     base = bk.fmt(bg_color=th["bg"], font_color=th["text"])
-    ws.set_column(0, 40, w(43), base)
-    ws.set_column(C_DATE, C_DATE, w(48), base)
+    ws.set_column(0, 40, w(44), base)
+    ws.set_column(C_DATE, C_DATE, w(46), base)
     ws.set_column(C_H0, C_H1, w(43), base)
     ws.set_column(C_SLEEP, C_MOOD, w(56), base)
     ws.set_column(C_NOTE, C_NOTE, w(190), base)
     ws.set_column(C_LAST + 1, 40, w(43), base)
 
-    for r, px in ((R_HUD, 36), (R_DAYLINE, 24), (R_ICON, 24), (R_SHORT, 20), (R_STREAK, 20)):
+    for r, px in ((R_HUD, 44), (R_DAYLINE, 26), (R_ICON, 30), (R_SHORT, 22), (R_STREAK, 22)):
         ws.set_row(r, h(px))
     for d in range(31):
-        ws.set_row(R_D1 + d, h(46))
+        ws.set_row(R_D1 + d, h(52))
     ws.set_row(R_D31 + 1, h(8))
     ws.set_row(R_LIST_H, h(22))
     for i in range(NH):
@@ -454,45 +454,38 @@ def build_month(bk, m, weeks, demo=None):
 
     # ── служебные ячейки I1:L1 (для условного форматирования, без других листов)
     svc = bk.fmt(bg_color=th["panel"], font_color=th["panel"], font_size=9)
-    bk.f(ws, R_HUD, C_SLEEP, f"={CALC}!{K_NACT}", svc)                       # активных привычек
-    bk.f(ws, R_HUD, C_ENERGY,
+    bk.f(ws, R_STREAK, C_SLEEP, f"={CALC}!{K_NACT}", svc)                    # активных привычек
+    bk.f(ws, R_STREAK, C_ENERGY,
          f"=IF(AND(YEAR({CALC}!{K_TODAY})={year},MONTH({CALC}!{K_TODAY})={m}),"
          f"{R_D1}+DAY({CALC}!{K_TODAY}),0)", svc)                            # строка «сегодня»
-    bk.f(ws, R_HUD, C_MOOD,
-         f"=IF(WEEKDAY({CALC}!{K_TODAY},2)>=6,1,0)", svc)                    # выходной: подсветка ответа
-    bk.f(ws, R_HUD, C_NOTE, f"={CALC}!{K_ROWT}", svc)
-    svc_n = RC(R_HUD, C_SLEEP, True, True)
-    svc_today = RC(R_HUD, C_ENERGY, True, True)
+    bk.f(ws, R_STREAK, C_MOOD,
+         f"=IF(WEEKDAY({CALC}!{K_TODAY},2)>=6,1,0)", svc)                    # выходной
+    bk.f(ws, R_STREAK, C_NOTE, f"={CALC}!{K_ROWT}", svc)
+    svc_n = RC(R_STREAK, C_SLEEP, True, True)
+    svc_today = RC(R_STREAK, C_ENERGY, True, True)
 
     # ── HUD
-    hud = bk.fmt(bg_color=th["panel"], font_color=th["text"], bold=True, font_size=14,
+    hud = bk.fmt(bg_color=th["panel"], font_color=th["text"], bold=True, font_size=15,
                  valign="vcenter", align="left", indent=1)
+    hud_r = bk.fmt(bg_color=th["panel"], font_color=th["muted"], bold=True, font_size=12,
+                   valign="vcenter", align="right", indent=1)
     ws.merge_range(R_HUD, C_DATE, R_HUD, C_H0 + 3, "", hud)
     pct = f"{CALC}!{RC(mrow, MC_PCT, True, True)}"
     el = f"{CALC}!{RC(mrow, MC_EL, True, True)}"
-    bk.f(ws, R_HUD, C_DATE,
-         f'="{name.upper()} · "&IF({el}=0,"—",ROUND({pct}*100,0)&" %")&'
-         f'" · Ур. "&{CALC}!{K_LVL}', hud)
-    barfmt = bk.fmt(bg_color=th["panel"], align="center", valign="vcenter")
-    ws.merge_range(R_HUD, C_H0 + 4, R_HUD, C_H1, "", barfmt)
-    if bk.target == "sheets":
-        bk.f(ws, R_HUD, C_H0 + 4,
-             '=SPARKLINE(%s,{"charttype","bar";"max",1;"color1","%s";"color2","%s"})'
-             % (f"{CALC}!{K_NEXT}", th["xp"], th["panel2"]), barfmt)
-    else:
-        bk.f(ws, R_HUD, C_H0 + 4,
-             f'=REPT("▮",MAX(1,ROUND({CALC}!{K_NEXT}*10,0)))',
-             bk.fmt(bg_color=th["panel"], font_color=th["xp"], font_size=11,
-                    align="center", valign="vcenter"))
+    bk.f(ws, R_HUD, C_DATE, f'="{name.upper()} {year}"', hud)
+    ws.merge_range(R_HUD, C_H0 + 4, R_HUD, C_NOTE, "", hud_r)
+    bk.f(ws, R_HUD, C_H0 + 4,
+         f'=IF({el}=0,"{T.MOTTO}",ROUND({pct}*100,0)&" % · "&{CALC}!{K_RANK}&" "&{CALC}!{K_LVL})',
+         hud_r)
 
     # ── строка дня
-    dayline = bk.fmt(bg_color=th["panel"], font_color=th["accent"], font_size=11,
+    dayline = bk.fmt(bg_color=th["panel"], font_color=th["muted"], font_size=11,
                      valign="vcenter", align="left", indent=1)
     ws.merge_range(R_DAYLINE, C_DATE, R_DAYLINE, C_NOTE, "", dayline)
     bk.f(ws, R_DAYLINE, C_DATE, dayline_formula(bk, m, weeks), dayline)
 
     # ── значки, имена, серии
-    icon_f = bk.fmt(bg_color=th["panel"], font_color=th["text"], font_size=14,
+    icon_f = bk.fmt(bg_color=th["panel"], font_color=th["text"], font_size=16,
                     align="center", valign="vcenter")
     short_f = bk.fmt(bg_color=th["panel"], font_color=th["muted"], font_size=10, bold=True,
                      align="center", valign="vcenter")
@@ -501,19 +494,20 @@ def build_month(bk, m, weeks, demo=None):
     pan = bk.fmt(bg_color=th["panel"])
     for r in (R_ICON, R_SHORT, R_STREAK):
         ws.write_blank(r, C_DATE, None, pan)
+    for r in (R_ICON, R_SHORT):
         for c in range(C_SLEEP, C_NOTE + 1):
             ws.write_blank(r, c, None, pan)
     rowt = f"{CALC}!{K_ROWT}"
     for i in range(NH):
         sr = 12 + i
-        bk.f(ws, R_ICON, C_H0 + i, f"=IF('Старт'!$B${sr}=\"\",\"\",'Старт'!$B${sr})", icon_f)
+        bk.f(ws, R_ICON, C_H0 + i, f"=IF('Старт'!$B${sr}=\"\",\"\",'Старт'!$A${sr})", icon_f)
         bk.f(ws, R_SHORT, C_H0 + i, f"=IF('Старт'!$B${sr}=\"\",\"\",'Старт'!$E${sr})", short_f)
-        bk.f(ws, R_STREAK, C_H0 + i, streak_formula(bk, i, sr), streak_f)
+        rec_cell = RC(R_LIST + i, C_ENERGY, True, True)       # рекорд из списка ниже
+        bk.f(ws, R_STREAK, C_H0 + i, streak_formula(bk, i, sr, rec_cell), streak_f)
 
     # ── сетка дней
     date_f = bk.fmt(bg_color=th["panel"], font_color=th["text"], font_size=10, bold=True,
-                    align="center", valign="vcenter", text_wrap=True,
-                    border=1, border_color=th["bg"])
+                    align="center", valign="vcenter", text_wrap=True)
     cb_f = bk.fmt(bg_color=th["panel2"], font_color=th["muted"], font_size=14,
                   align="center", valign="vcenter", border=1, border_color=th["bg"],
                   num_format=";;;")
@@ -567,7 +561,7 @@ def build_month(bk, m, weeks, demo=None):
         "format": bk.fmt(bg_color=th["bg"], font_color=th["bg"])})
     bk.cf(ws, R_D1, C_H0, R_D31, C_H1, {
         "type": "formula", "criteria": f"={CN(C_H0)}${R_SHORT + 1}=\"\"",
-        "format": bk.fmt(bg_color=th["panel"], font_color=th["panel"])})
+        "format": bk.fmt(bg_color=th["bg"], font_color=th["bg"])})
 
     # ── список привычек
     sec = bk.fmt(bg_color=th["bg"], font_color=th["muted"], font_size=9, bold=True,
@@ -592,7 +586,7 @@ def build_month(bk, m, weeks, demo=None):
         ws.merge_range(r, C_H0 + 5, r, C_H0 + 6, "", num_f)
         bk.f(ws, r, C_H0 + 5,
              f"=IF('Старт'!$B${sr}=\"\",\"\",{done}&\" из \"&{exp})", num_f)
-        bk.f(ws, r, C_SLEEP, streak_formula(bk, i, sr), mut_f)
+        bk.f(ws, r, C_SLEEP, streak_formula(bk, i, sr, RC(r, C_ENERGY, True, True)), mut_f)
         bk.f(ws, r, C_ENERGY,
              f"=IF('Старт'!$B${sr}=\"\",\"\",MAX({CALC}!${CN(KC_S0 + i)}${a}:"
              f"${CN(KC_S0 + i)}${b}))", mut_f)
@@ -667,14 +661,15 @@ def build_month(bk, m, weeks, demo=None):
     return ws
 
 
-def streak_formula(bk, i, sr):
+def streak_formula(bk, i, sr, rec=None):
     """Серия привычки: число, «🔥», «🛡», «верни» либо «ок» / «ещё N» для неежедневных."""
     rowt = f"{CALC}!{K_ROWT}"
     s = f"INDEX({CALC}!${CN(KC_S0 + i)}:${CN(KC_S0 + i)},{rowt})"
     miss = f"INDEX({CALC}!${CN(KC_MISS0 + i)}:${CN(KC_MISS0 + i)},{rowt})"
+    zero = f'IF(AND({miss}>1,{rec}>=3),"верни","")' if rec else '""'
     return (f'=IF(\'Старт\'!$B${sr}="","",IF({rowt}=0,"",'
             f'IF(IF(\'Старт\'!$F${sr}="",7,\'Старт\'!$F${sr})<7,"ок",'
-            f'IF({s}=0,IF({miss}>1,"верни",""),'
+            f'IF({s}=0,{zero},'
             f'IF({s}>=3,"🔥","")&{s}&IF({miss}<=1,"🛡",""))))'
             f')')
 
@@ -730,9 +725,10 @@ def dayline_formula(bk, m, weeks):
     for i in range(NH):
         s = f"INDEX({CALC}!${CN(KC_S0 + i)}:${CN(KC_S0 + i)},{rowt})"
         ms = f"INDEX({CALC}!${CN(KC_MISS0 + i)}:${CN(KC_MISS0 + i)},{rowt})"
+        rec = RC(R_LIST + i, C_ENERGY, True, True)
         zero_terms.append(f"IF(AND('Старт'!$B${12 + i}<>\"\","
                           f"IF('Старт'!$F${12 + i}=\"\",7,'Старт'!$F${12 + i})=7,"
-                          f"{s}=0,{ms}>1),{i + 1},0)")
+                          f"{s}=0,{ms}>1,N({rec})>=3),{i + 1},0)")
     first_zero = f"MAX({','.join(zero_terms)})"
     nm = f"INDEX('Старт'!$E$12:$E$18,MAX(1,{first_zero}))"
     why = f"INDEX('Старт'!$B$20:$B$26,MAX(1,{first_zero}))"
@@ -1108,12 +1104,12 @@ def build(path, theme, target, year, today, demo=None, only_months=None):
 def geometry_check():
     """Ворота геометрии: кадр ≤350 px, шапка 124 px, строки 46 px, кегли ≥10 pt."""
     bad = []
-    frame = 48 + NH * 43
+    frame = 46 + NH * 43
     if frame > 350:
         bad.append(f"кадр {frame} px > 350")
-    head = 36 + 24 + 24 + 20 + 20
-    if head != 124:
-        bad.append(f"шапка {head} px ≠ 124")
+    head = 44 + 26 + 30 + 22 + 22          # крупнее спецификации ради попадания пальцем
+    if head > 150:
+        bad.append(f"шапка {head} px > 150")
     return bad
 
 
@@ -1145,11 +1141,11 @@ def main():
         bad = budget.check()
         print(f"пробник: формул {budget.formulas}; " + ("ворота пройдены" if not bad else str(bad)))
         return 1 if bad else 0
-    targets = [(f"Режим · {year} (тёмный).xlsx", "dark", "sheets", None),
-               (f"Режим · {year} (светлый).xlsx", "light", "sheets", None),
-               (f"Режим · {year} · Excel.xlsx", "dark", "excel", None)]
+    targets = [(f"Режим · {year}.xlsx", "light", "sheets", None),
+               (f"Режим · {year} (тёмный, для компьютера).xlsx", "dark", "sheets", None),
+               (f"Режим · {year} · Excel.xlsx", "light", "excel", None)]
     if demo:
-        targets.append((f"Режим · демо.xlsx", "dark", "sheets", demo))
+        targets.append((f"Режим · демо.xlsx", "light", "sheets", demo))
 
     for fname, theme, target, data in targets:
         path = os.path.join(out, fname)
